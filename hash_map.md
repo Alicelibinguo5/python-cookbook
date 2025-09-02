@@ -48,6 +48,32 @@ avg_by_team = {k: (sum_by_team[k] / count_by_team[k]) for k in sum_by_team}
 
 - For min/max, initialize with `defaultdict(lambda: +float("inf"))` or `-float("inf")` and use `min()`/`max()` inside the loop.
 
+Examples:
+```python
+from collections import defaultdict
+from typing import Dict
+
+# Min/Max score per team (numeric)
+min_score_by_team: Dict[str, float] = defaultdict(lambda: float("inf"))
+max_score_by_team: Dict[str, float] = defaultdict(lambda: float("-inf"))
+for row in rows:
+    k = row.get("team")
+    v = float(row.get("score", 0))
+    min_score_by_team[k] = min(min_score_by_team[k], v)
+    max_score_by_team[k] = max(max_score_by_team[k], v)
+
+# Optional: replace +inf with None for groups with no data beyond defaults
+min_score_clean = {k: (None if v == float("inf") else v) for k, v in min_score_by_team.items()}
+
+# Multi-key min using tuple key
+from typing import Tuple
+min_by_group: Dict[Tuple[str, str], float] = defaultdict(lambda: float("inf"))
+for row in rows:
+    key = (row.get("team"), row.get("region"))
+    val = float(row.get("score", 0))
+    min_by_group[key] = min(min_by_group[key], val)
+```
+
 ## 3) Multi-key group (tuple keys)
 
 ```python
