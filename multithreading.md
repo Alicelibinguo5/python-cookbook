@@ -2,6 +2,55 @@
 
 Concise, reusable patterns for Python multi-threading with practical examples and best practices.
 
+## Threading Concepts
+
+### Single-threaded vs Multi-threaded Execution
+
+```
+Single-threaded:
+Main Thread: [Task A] → [Task B] → [Task C] → [Task D]
+Time:        0────────1────────2────────3────────4
+
+Multi-threaded:
+Main Thread:  [Task A] → [Coordinate] → [Collect Results]
+Thread 1:              [Task B]
+Thread 2:              [Task C]
+Thread 3:                      [Task D]
+Time:         0────────1────────2────────3────────4
+```
+
+### Thread Lifecycle
+
+```
+[NEW] → [RUNNABLE] → [RUNNING] → [TERMINATED]
+   ↓         ↑           ↓
+   └─────────┴─────→ [BLOCKED/WAITING]
+```
+
+### Producer-Consumer Model
+
+```
+Producer Thread          Queue (Buffer)         Consumer Thread
+     │                       │                       │
+     ├─ produce() ──→ [item1, item2, item3] ←── get() ─┤
+     ├─ produce() ──→ [item4, item5, item6] ←── get() ─┤
+     └─ produce() ──→ [item7, item8, item9] ←── get() ─┘
+```
+
+### Lock Synchronization
+
+```
+Without Lock (Race Condition):
+Thread A: read(x=0) → compute(x+1) → write(x=1)
+Thread B:      read(x=0) → compute(x+1) → write(x=1)
+Result: x=1 (incorrect, should be 2)
+
+With Lock:
+Thread A: [LOCK] → read(x=0) → compute(x+1) → write(x=1) → [UNLOCK]
+Thread B:                                                    [LOCK] → read(x=1) → compute(x+1) → write(x=2) → [UNLOCK]
+Result: x=2 (correct)
+```
+
 ## Basics
 
 - Use [`threading.Thread`](https://docs.python.org/3/library/threading.html#threading.Thread) for I/O-bound tasks, not CPU-bound (GIL limitation).
@@ -116,6 +165,18 @@ consumer_thread.join()
 
 ## ThreadPoolExecutor (Recommended)
 
+### Thread Pool Architecture
+
+```
+Main Thread                    Thread Pool (max_workers=3)
+     │                              │
+     ├─ submit(task1) ──────→ [Worker Thread 1] ── task1
+     ├─ submit(task2) ──────→ [Worker Thread 2] ── task2
+     ├─ submit(task3) ──────→ [Worker Thread 3] ── task3
+     ├─ submit(task4) ──────→ [    Queue: task4, task5    ]
+     └─ submit(task5) ──────→ [  (waiting for free worker) ]
+```
+
 ```python
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
@@ -191,6 +252,17 @@ for t in threads:
 
 ## Event Coordination
 
+### Event Synchronization Flow
+
+```
+Time:     0────1────2────3────4────5
+Setter:   [wait] → [set event]
+Waiter1:  [wait for event...] → [continue]
+Waiter2:  [wait for event...] → [continue]
+Waiter3:  [wait for event...] → [continue]
+Event:    [clear] ──────────→ [SET] ────→ [remains set]
+```
+
 ```python
 import threading
 import time
@@ -229,6 +301,17 @@ for t in waiters:
 ```
 
 ## Barrier Synchronization
+
+### Barrier Coordination Pattern
+
+```
+Time:     0────1────2────3────4────5
+Worker1:  [work] ──→ [wait at barrier] ──→ [continue together]
+Worker2:  [work] ────────→ [wait at barrier] ──→ [continue together]
+Worker3:  [work] → [wait at barrier] ──────────→ [continue together]
+Worker4:  [work] ──────→ [wait at barrier] ────→ [continue together]
+Barrier:  [3 parties] ──→ [4 parties] ──→ [RELEASE ALL]
+```
 
 ```python
 import threading
@@ -307,6 +390,39 @@ for t in threads:
 
 with resource.acquire() as data:
     print(f"Final count: {data['count']}")
+```
+
+## Memory Model & GIL
+
+### Python GIL (Global Interpreter Lock)
+
+```
+CPU-bound Tasks (GIL Impact):
+Thread 1: [■■■■■] [wait] [■■■■■] [wait] [■■■■■]
+Thread 2: [wait] [■■■■■] [wait] [■■■■■] [wait]
+GIL:      [T1──] [T2──] [T1──] [T2──] [T1──]
+Result: No true parallelism for CPU tasks
+
+I/O-bound Tasks (GIL Released):
+Thread 1: [■■] [I/O wait────] [■■] [I/O wait────]
+Thread 2: [■■] [I/O wait────] [■■] [I/O wait────]
+Thread 3:     [■■] [I/O wait────] [■■]
+GIL:      Released during I/O operations
+Result: True concurrency for I/O tasks
+```
+
+### Deadlock Scenario
+
+```
+Thread A:                    Thread B:
+lock1.acquire() ──┐         lock2.acquire() ──┐
+                  │                           │
+                  ├─ [DEADLOCK] ─────────────┤
+                  │                           │
+lock2.acquire() ──┘         lock1.acquire() ──┘
+
+Prevention: Always acquire locks in same order
+Thread A: lock1 → lock2     Thread B: lock1 → lock2
 ```
 
 ## Tips
