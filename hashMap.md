@@ -1,6 +1,18 @@
 # Hash Map Group-By Patterns (list[dict])
 
 Common, reliable ways to group a list of dictionaries in Python.
+	1.	Laser-focus on Python-specific strengths
+	•	Master collections (defaultdict, Counter, deque, OrderedDict).
+	•	Practice dict + list comprehensions until they’re muscle memory.
+	•	Be fluent in sorted(..., key=...) with custom lambdas/tuples.
+	•	Get comfortable with enumerate, zip, and itertools for cleaner loops.
+	2.	Pattern training, not random grinding
+Most dictionary-heavy mediums fall into a handful of buckets:
+	•	Counting & frequency maps (Top K, anagrams, unique chars).
+	•	Grouping by key (like SQL GROUP BY).
+	•	Sliding windows with dicts.
+	•	Prefix/suffix maps.
+	•	Graphs represented with adjacency dicts
 
 ## 1) Group rows by a single key (collect into lists)
 
